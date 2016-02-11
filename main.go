@@ -176,9 +176,8 @@ Options:
 	fmt.Println(arguments)
 
 	if arguments["--restore"] == true {
-		fmt.Println(arguments["--exclude"].([]string))
 		if len(arguments["--exclude"].([]string)) > 0 {
-			fmt.Printf("\n--exclude can be used only for backups\n\n")
+			fmt.Printf("\n--exclude, -x can be used only for backups\n\n")
 			os.Exit(1)
 		}
 		fmt.Println("Restore mode:")
