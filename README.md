@@ -10,7 +10,7 @@ a "go build" will generate executable named "consul-backup"
 
 #
 Usage:
-  consul-backup [-i IP:PORT] [-t TOKEN] [--aclbackup] [--aclbackupfile ACLBACKUPFILE] [--restore] <filename>
+  consul-backup [-i IP:PORT] [-t TOKEN] [--aclbackup] [--aclbackupfile ACLBACKUPFILE] [--exclude PATTERN]... [--restore] <filename>
   consul-backup -h | --help
   consul-backup --version
 
@@ -21,4 +21,5 @@ Options:
   -t, --token=TOKEN                  An ACL Token with proper permissions in Consul [default: ].
   -a, --aclbackup                    Backup ACLs, does nothing in restore mode. ACL restore not available at this time.
   -b, --aclbackupfile=ACLBACKUPFILE  ACL Backup Filename [default: acl.bkp].
+  -x, --exclude=[PATTERN]            Repeatable option for patterns to exclude from the backup.
   -r, --restore                      Activate restore mode
