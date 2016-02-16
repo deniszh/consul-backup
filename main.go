@@ -36,6 +36,7 @@ func printslice(slice []string) {
 	//}
 }
 
+/*
 func NotStartsWith(list []string, elem string) bool {
 	for _, t := range list {
 		if strings.HasPrefix(elem, t) {
@@ -44,8 +45,18 @@ func NotStartsWith(list []string, elem string) bool {
 	}
 	return true
 }
+*/
 
-func backup(ipaddress string, token string, outfile string, exclusion []string) {
+func StartsWith(list []string, elem string) bool {
+	for _, t := range list {
+		if strings.HasPrefix(elem, t) {
+			return true
+		}
+	}
+	return false
+}
+
+func backup(ipaddress string, token string, outfile string, exclusion []string, inclusion []string) {
 
 	config := api.DefaultConfig()
 	config.Address = ipaddress
@@ -64,7 +75,14 @@ func backup(ipaddress string, token string, outfile string, exclusion []string) 
 	outstring := ""
 	if len(exclusion) > 0 {
 		for _, element := range pairs {
-			if NotStartsWith(exclusion, element.Key) {
+			if !StartsWith(exclusion, element.Key) {
+				encoded_value := base64.StdEncoding.EncodeToString(element.Value)
+				outstring += fmt.Sprintf("%s:%s\n", element.Key, encoded_value)
+			}
+		}
+	} else if len(inclusion) > 0 {
+		for _, element := range pairs {
+			if StartsWith(inclusion, element.Key) {
 				encoded_value := base64.StdEncoding.EncodeToString(element.Value)
 				outstring += fmt.Sprintf("%s:%s\n", element.Key, encoded_value)
 			}
@@ -158,7 +176,7 @@ func main() {
 	usage := `Consul KV and ACL Backup with KV Restore tool.
 
 Usage:
-  consul-backup [-i IP:PORT] [-t TOKEN] [--aclbackup] [--aclbackupfile ACLBACKUPFILE] [--exclude-prefix PREFIX]... [--restore] <filename>
+  consul-backup [-i IP:PORT] [-t TOKEN] [--aclbackup] [--aclbackupfile ACLBACKUPFILE] [--include-prefix=PREFIX]... [--exclude-prefix PREFIX]... [--restore] <filename>
   consul-backup -h | --help
   consul-backup --version
 
@@ -170,6 +188,7 @@ Options:
   -a, --aclbackup                    Backup ACLs, does nothing in restore mode. ACL restore not available at this time.
   -b, --aclbackupfile=ACLBACKUPFILE  ACL Backup Filename [default: acl.bkp].
   -x, --exclude-prefix=[PREFIX]      Repeatable option for keys starting with prefix to exclude from the backup.
+  -n, --include-prefix=[PREFIX]     Repeatable option for keys starting with prefix to include in the backup.
   -r, --restore                      Activate restore mode`
 
 	arguments, _ := docopt.Parse(usage, nil, true, "consul-backup 1.0", false)
@@ -180,18 +199,26 @@ Options:
 			fmt.Printf("\n--exclude-prefix, -x can be used only for backups\n\n")
 			os.Exit(1)
 		}
+		if len(arguments["--include-prefix"].([]string)) > 0 {
+			fmt.Printf("\n--include-prefix, -in can be used only for backups\n\n")
+			os.Exit(1)
+		}
 		fmt.Println("Restore mode:")
 		fmt.Printf("Warning! This will overwrite existing kv. Press [enter] to continue; CTL-C to exit")
 		fmt.Scanln()
 		fmt.Println("Restoring KV from file: ", arguments["<filename>"].(string))
 		restore(arguments["--address"].(string), arguments["--token"].(string), arguments["<filename>"].(string))
 	} else {
+		if (len(arguments["--exclude-prefix"].([]string)) > 0) && (len(arguments["--include-prefix"].([]string)) > 0) {
+			fmt.Printf("\n--exclude-prefix and --include-prefix cannot be used together\n\n")
+			os.Exit(1)
+		}
 		if len(arguments["--exclude-prefix"].([]string)) > 0 {
 			fmt.Println("excluding keys with pattern(s): ", arguments["--exclude-prefix"].([]string))
 		}
 		fmt.Println("Backup mode:")
 		fmt.Println("KV store will be backed up to file: ", arguments["<filename>"].(string))
-		backup(arguments["--address"].(string), arguments["--token"].(string), arguments["<filename>"].(string), arguments["--exclude-prefix"].([]string))
+		backup(arguments["--address"].(string), arguments["--token"].(string), arguments["<filename>"].(string), arguments["--exclude-prefix"].([]string), arguments["--include-prefix"].([]string))
 		if arguments["--aclbackup"] == true {
 			fmt.Println("ACL Tokens will be backed up to file: ", arguments["--aclbackupfile"].(string))
 			backupAcls(arguments["--address"].(string), arguments["--token"].(string), arguments["--aclbackupfile"].(string))
