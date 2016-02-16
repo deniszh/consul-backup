@@ -210,7 +210,10 @@ Options:
 			os.Exit(1)
 		}
 		if len(arguments["--exclude-prefix"].([]string)) > 0 {
-			fmt.Println("excluding keys with pattern(s): ", arguments["--exclude-prefix"].([]string))
+			fmt.Println("excluding keys with prefix(es): ", arguments["--exclude-prefix"].([]string))
+		}
+		if len(arguments["--include-prefix"].([]string)) > 0 {
+			fmt.Println("including only keys with prefix(es): ", arguments["--include-prefix"].([]string))
 		}
 		fmt.Println("Backup mode:")
 		fmt.Println("KV store will be backed up to file: ", arguments["<filename>"].(string))
