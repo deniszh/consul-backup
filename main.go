@@ -36,9 +36,9 @@ func printslice(slice []string) {
 	//}
 }
 
-func NotContains(list []string, elem string) bool {
+func NotStartsWith(list []string, elem string) bool {
 	for _, t := range list {
-		if strings.Contains(elem, t) {
+		if strings.HasPrefix(elem, t) {
 			return false
 		}
 	}
@@ -64,7 +64,7 @@ func backup(ipaddress string, token string, outfile string, exclusion []string) 
 	outstring := ""
 	if len(exclusion) > 0 {
 		for _, element := range pairs {
-			if NotContains(exclusion, element.Key) {
+			if NotStartsWith(exclusion, element.Key) {
 				encoded_value := base64.StdEncoding.EncodeToString(element.Value)
 				outstring += fmt.Sprintf("%s:%s\n", element.Key, encoded_value)
 			}
@@ -158,7 +158,7 @@ func main() {
 	usage := `Consul KV and ACL Backup with KV Restore tool.
 
 Usage:
-  consul-backup [-i IP:PORT] [-t TOKEN] [--aclbackup] [--aclbackupfile ACLBACKUPFILE] [--exclude PATTERN]... [--restore] <filename>
+  consul-backup [-i IP:PORT] [-t TOKEN] [--aclbackup] [--aclbackupfile ACLBACKUPFILE] [--exclude-prefix PREFIX]... [--restore] <filename>
   consul-backup -h | --help
   consul-backup --version
 
@@ -169,15 +169,15 @@ Options:
   -t, --token=TOKEN                  An ACL Token with proper permissions in Consul [default: ].
   -a, --aclbackup                    Backup ACLs, does nothing in restore mode. ACL restore not available at this time.
   -b, --aclbackupfile=ACLBACKUPFILE  ACL Backup Filename [default: acl.bkp].
-  -x, --exclude=[PATTERN]            Repeatable option for patterns to exclude from the backup.
+  -x, --exclude-prefix=[PREFIX]      Repeatable option for keys starting with prefix to exclude from the backup.
   -r, --restore                      Activate restore mode`
 
 	arguments, _ := docopt.Parse(usage, nil, true, "consul-backup 1.0", false)
 	fmt.Println(arguments)
 
 	if arguments["--restore"] == true {
-		if len(arguments["--exclude"].([]string)) > 0 {
-			fmt.Printf("\n--exclude, -x can be used only for backups\n\n")
+		if len(arguments["--exclude-prefix"].([]string)) > 0 {
+			fmt.Printf("\n--exclude-prefix, -x can be used only for backups\n\n")
 			os.Exit(1)
 		}
 		fmt.Println("Restore mode:")
@@ -186,12 +186,12 @@ Options:
 		fmt.Println("Restoring KV from file: ", arguments["<filename>"].(string))
 		restore(arguments["--address"].(string), arguments["--token"].(string), arguments["<filename>"].(string))
 	} else {
-		if len(arguments["--exclude"].([]string)) > 0 {
-			fmt.Println("excluding keys with pattern(s): ", arguments["--exclude"].([]string))
+		if len(arguments["--exclude-prefix"].([]string)) > 0 {
+			fmt.Println("excluding keys with pattern(s): ", arguments["--exclude-prefix"].([]string))
 		}
 		fmt.Println("Backup mode:")
 		fmt.Println("KV store will be backed up to file: ", arguments["<filename>"].(string))
-		backup(arguments["--address"].(string), arguments["--token"].(string), arguments["<filename>"].(string), arguments["--exclude"].([]string))
+		backup(arguments["--address"].(string), arguments["--token"].(string), arguments["<filename>"].(string), arguments["--exclude-prefix"].([]string))
 		if arguments["--aclbackup"] == true {
 			fmt.Println("ACL Tokens will be backed up to file: ", arguments["--aclbackupfile"].(string))
 			backupAcls(arguments["--address"].(string), arguments["--token"].(string), arguments["--aclbackupfile"].(string))
