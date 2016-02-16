@@ -195,12 +195,8 @@ Options:
 	fmt.Println(arguments)
 
 	if arguments["--restore"] == true {
-		if len(arguments["--exclude-prefix"].([]string)) > 0 {
-			fmt.Printf("\n--exclude-prefix, -x can be used only for backups\n\n")
-			os.Exit(1)
-		}
-		if len(arguments["--include-prefix"].([]string)) > 0 {
-			fmt.Printf("\n--include-prefix, -in can be used only for backups\n\n")
+		if (len(arguments["--exclude-prefix"].([]string)) > 0) || (len(arguments["--include-prefix"].([]string)) > 0) {
+			fmt.Printf("\n--exclude-prefix, -x and --include-prefix, -n can be used only for backups\n\n")
 			os.Exit(1)
 		}
 		fmt.Println("Restore mode:")
