@@ -6,7 +6,9 @@ import (
 	"github.com/docopt/docopt-go"
 	"github.com/hashicorp/consul/api"
 	"io/ioutil"
+	"net"
 	"os"
+	"os/exec"
 	"sort"
 	"strings"
 )
@@ -36,16 +38,35 @@ func printslice(slice []string) {
 	//}
 }
 
-/*
-func NotStartsWith(list []string, elem string) bool {
-	for _, t := range list {
-		if strings.HasPrefix(elem, t) {
-			return false
-		}
+func Check_Socket(endpoint string) bool {
+	_, err := net.Dial("tcp", endpoint)
+	if err != nil {
+		message := fmt.Sprintf("There is no socket listening at %s. Giving up: %s", endpoint, err)
+		fmt.Println(message)
+		os.Exit(1)
 	}
 	return true
 }
-*/
+
+func ConsulLookPath() bool {
+	_, err := exec.LookPath("consul")
+	if err != nil {
+		return false
+	}
+	return true
+}
+
+func ConsulInfo(a, b, c string) string {
+	out, err := exec.Command(a, b, c).Output()
+	var consulinfo_output string
+	if err != nil {
+		message := fmt.Sprintf("There was an error querying consul. Giving up: %s", err)
+		fmt.Println(message)
+		os.Exit(1)
+	}
+	consulinfo_output = string(out)
+	return consulinfo_output
+}
 
 func StartsWith(list []string, elem string) bool {
 	for _, t := range list {
@@ -176,23 +197,48 @@ func main() {
 	usage := `Consul KV and ACL Backup with KV Restore tool.
 
 Usage:
-  consul-backup [-i IP:PORT] [-t TOKEN] [--aclbackup] [--aclbackupfile ACLBACKUPFILE] [--include-prefix=PREFIX]... [--exclude-prefix PREFIX]... [--restore] <filename>
+  consul-backup [-i IP] [--http-port HTTPPORT] [--rpc-port RPCPORT] [-l] [-t TOKEN] [-a] [-b ACLBACKUPFILE] [-n INPREFIX]... [-x EXPREFIX]... [--restore] <filename>
   consul-backup -h | --help
   consul-backup --version
 
 Options:
   -h --help                          Show this screen.
   --version                          Show version.
-  -i, --address=IP:PORT              The HTTP endpoint of Consul [default: 127.0.0.1:8500].
+  -l, --leader-only                  Create backup only on consul leader.
+  --rpc-port=RPCPORT                 RPC port [default: 8400].
+  --http-port=HTTPPORT               HTTP endpoint port [default: 8500].
+  -i, --address=IP                   The HTTP endpoint of Consul [default: 127.0.0.1].
   -t, --token=TOKEN                  An ACL Token with proper permissions in Consul [default: ].
   -a, --aclbackup                    Backup ACLs, does nothing in restore mode. ACL restore not available at this time.
   -b, --aclbackupfile=ACLBACKUPFILE  ACL Backup Filename [default: acl.bkp].
-  -x, --exclude-prefix=[PREFIX]      Repeatable option for keys starting with prefix to exclude from the backup.
-  -n, --include-prefix=[PREFIX]     Repeatable option for keys starting with prefix to include in the backup.
+  -x, --exclude-prefix=[EXPREFIX]    Repeatable option for keys starting with prefix to exclude from the backup.
+  -n, --include-prefix=[INPREFIX]    Repeatable option for keys starting with prefix to include in the backup.
   -r, --restore                      Activate restore mode`
 
 	arguments, _ := docopt.Parse(usage, nil, true, "consul-backup 1.0", false)
-	fmt.Println(arguments)
+
+	var (
+		httpendpoint = fmt.Sprintf("%s:%s", arguments["--address"], arguments["--http-port"])
+		rpcendpoint  = fmt.Sprintf("%s:%s", arguments["--address"], arguments["--rpc-port"])
+		rpcoptstring = fmt.Sprintf("-rpc-addr=%s", rpcendpoint)
+	)
+
+	Check_Socket(httpendpoint)
+	Check_Socket(rpcendpoint)
+
+	if arguments["--leader-only"] == true {
+		// if consul client is not available we keep running
+		if ConsulLookPath() {
+			var consulinfo_output = ConsulInfo("consul", "info", rpcoptstring)
+			if strings.Contains(consulinfo_output, "leader = false") {
+				fmt.Println("Not a consul leader. Giving up")
+				os.Exit(0)
+			}
+		} else {
+			fmt.Println("In order to run this check you need to install consul excecutable")
+			fmt.Println("Continuing operations anyway")
+		}
+	}
 
 	if arguments["--restore"] == true {
 		if (len(arguments["--exclude-prefix"].([]string)) > 0) || (len(arguments["--include-prefix"].([]string)) > 0) {
@@ -217,10 +263,10 @@ Options:
 		}
 		fmt.Println("Backup mode:")
 		fmt.Println("KV store will be backed up to file: ", arguments["<filename>"].(string))
-		backup(arguments["--address"].(string), arguments["--token"].(string), arguments["<filename>"].(string), arguments["--exclude-prefix"].([]string), arguments["--include-prefix"].([]string))
+		backup(httpendpoint, arguments["--token"].(string), arguments["<filename>"].(string), arguments["--exclude-prefix"].([]string), arguments["--include-prefix"].([]string))
 		if arguments["--aclbackup"] == true {
 			fmt.Println("ACL Tokens will be backed up to file: ", arguments["--aclbackupfile"].(string))
-			backupAcls(arguments["--address"].(string), arguments["--token"].(string), arguments["--aclbackupfile"].(string))
+			backupAcls(httpendpoint, arguments["--token"].(string), arguments["--aclbackupfile"].(string))
 		}
 	}
 }
