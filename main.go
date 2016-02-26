@@ -232,7 +232,7 @@ Options:
 			var consulinfo_output = ConsulInfo("consul", "info", rpcoptstring)
 			if strings.Contains(consulinfo_output, "leader = false") {
 				fmt.Println("Not a consul leader. Giving up")
-				os.Exit(0)
+				os.Exit(1)
 			}
 		} else {
 			fmt.Println("In order to run this check you need to install consul excecutable")
