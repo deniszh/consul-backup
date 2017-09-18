@@ -59,12 +59,12 @@ func ConsulLookPath() bool {
 func ConsulInfo(a, b string) string {
 	out, err := exec.Command(a, b).Output()
 	var consulinfo_output string
+	consulinfo_output = string(out)
 	if err != nil {
-		message := fmt.Sprintf("There was an error querying consul. Giving up: %s", err)
+		message := fmt.Sprintf("There was an error querying consul. Giving up: %s, %s", err, consulinfo_output)
 		fmt.Println(message)
 		os.Exit(1)
 	}
-	consulinfo_output = string(out)
 	return consulinfo_output
 }
 
