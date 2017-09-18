@@ -61,7 +61,7 @@ func ConsulInfo(a, b string) string {
 	var consulinfo_output string
 	consulinfo_output = string(out)
 	if err != nil {
-		message := fmt.Sprintf("There was an error querying consul. Giving up: %s, %s", err, consulinfo_output)
+		message := fmt.Sprintf("There was an error querying consul: %s. Giving up: %s", err, consulinfo_output)
 		fmt.Println(message)
 		os.Exit(1)
 	}
