@@ -197,7 +197,7 @@ func main() {
 	usage := `Consul KV and ACL Backup with KV Restore tool.
 
 Usage:
-  consul-backup [-i IP] [--http-port HTTPPORT] [--rpc-port RPCPORT] [-l] [-t TOKEN] [-a] [-b ACLBACKUPFILE] [-n INPREFIX]... [-x EXPREFIX]... [--restore] <filename>
+  consul-backup [-i IP] [--http-port HTTPPORT] [-l] [-t TOKEN] [-a] [-b ACLBACKUPFILE] [-n INPREFIX]... [-x EXPREFIX]... [--restore] <filename>
   consul-backup -h | --help
   consul-backup --version
 
@@ -205,7 +205,6 @@ Options:
   -h --help                          Show this screen.
   --version                          Show version.
   -l, --leader-only                  Create backup only on consul leader.
-  --rpc-port=RPCPORT                 RPC port [default: 8500].
   --http-port=HTTPPORT               HTTP endpoint port [default: 8500].
   -i, --address=IP                   The HTTP endpoint of Consul [default: 127.0.0.1].
   -t, --token=TOKEN                  An ACL Token with proper permissions in Consul [default: ].
@@ -219,17 +218,14 @@ Options:
 
 	var (
 		httpendpoint = fmt.Sprintf("%s:%s", arguments["--address"], arguments["--http-port"])
-		rpcendpoint  = fmt.Sprintf("%s:%s", arguments["--address"], arguments["--rpc-port"])
-		rpcoptstring = fmt.Sprintf("-rpc-addr=%s", rpcendpoint)
 	)
 
 	Check_Socket(httpendpoint)
-	Check_Socket(rpcendpoint)
 
 	if arguments["--leader-only"] == true {
 		// if consul client is not available we keep running
 		if ConsulLookPath() {
-			var consulinfo_output = ConsulInfo("consul", "info", rpcoptstring)
+			var consulinfo_output = ConsulInfo("consul", "info")
 			if strings.Contains(consulinfo_output, "leader = false") {
 				fmt.Println("Not a consul leader. Giving up")
 				os.Exit(1)
