@@ -205,7 +205,7 @@ Options:
   -h --help                          Show this screen.
   --version                          Show version.
   -l, --leader-only                  Create backup only on consul leader.
-  --rpc-port=RPCPORT                 RPC port [default: 8400].
+  --rpc-port=RPCPORT                 RPC port [default: 8500].
   --http-port=HTTPPORT               HTTP endpoint port [default: 8500].
   -i, --address=IP                   The HTTP endpoint of Consul [default: 127.0.0.1].
   -t, --token=TOKEN                  An ACL Token with proper permissions in Consul [default: ].
